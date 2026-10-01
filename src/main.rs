@@ -5,7 +5,9 @@ use std::num::ParseIntError;
 fn main() -> io::Result<()> {
     loop {
         print_menu()?;
-        let choice = read_line("Choose a lesson: ")?;
+        let Some(choice) = read_line("Enter 1-8 or q: ")? else {
+            break;
+        };
 
         match choice.trim() {
             "1" => lesson_variables(),
@@ -21,6 +23,12 @@ fn main() -> io::Result<()> {
                 break;
             }
             _ => println!("Please enter a number from 1 to 8, or q to quit."),
+        }
+
+        if matches!(choice.trim(), "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8") {
+            if read_line("Press Enter to return to the menu...")?.is_none() {
+                break;
+            }
         }
 
         println!();
@@ -43,13 +51,15 @@ fn print_menu() -> io::Result<()> {
     io::stdout().flush()
 }
 
-fn read_line(prompt: &str) -> io::Result<String> {
+fn read_line(prompt: &str) -> io::Result<Option<String>> {
     print!("{prompt}");
     io::stdout().flush()?;
 
     let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    Ok(input)
+    if io::stdin().read_line(&mut input)? == 0 {
+        return Ok(None);
+    }
+    Ok(Some(input))
 }
 
 fn lesson_variables() {
@@ -57,11 +67,13 @@ fn lesson_variables() {
     let mut attempts = 1;
     attempts += 1;
 
+    // The literal is a borrowed string slice (&str); to_uppercase returns an owned String.
+    // This creates a new binding that shadows the first one; it does not mutate it.
     let language = language.to_uppercase();
     let version = 2021;
     let is_fun = true;
 
-    println!("Shadowing made the language name {language}.");
+    println!("Shadowing replaced the visible binding with its uppercase String: {language}.");
     println!("Mutable attempts: {attempts}; edition: {version}; fun: {is_fun}");
     println!("A let binding is immutable by default. Use mut when a value must change.");
 }
@@ -79,33 +91,49 @@ fn lesson_control_flow() {
         total += score;
     }
 
+    // f64 is a 64-bit floating-point number, so the average can include a fraction.
+    // Cast both integers before dividing; integer division would discard the decimal part.
     let average = total as f64 / scores.len() as f64;
+    // :.1 displays one digit after the decimal point; it does not change the stored value.
     println!("Average: {average:.1}");
     println!("for iterates over a collection; if and else choose a branch.");
 }
 
 fn lesson_ownership() {
-    let message = String::from("ownership makes memory rules explicit");
-    let length = byte_length(&message);
-    println!("Borrowed the message to count its {length} bytes: {message}");
+    // A quoted string literal is a borrowed, fixed-size view with type &str.
+    let literal: &str = "Rust";
+    println!("A string literal (&str) is borrowed text: {literal}");
 
+    // String::from copies text into an owned, growable String.
+    let message = String::from("ownership makes memory rules explicit");
+
+    // &message lends read-only access. The function borrows the text, so message remains usable.
+    // Rust converts &String to the &str that byte_length expects.
+    let length = byte_length(&message);
+    println!("Borrowed message is {length} bytes; the owner can still use it: {message}");
+
+    // Passing a String by value moves ownership into add_period; its returned String is owned here.
     let message = add_period(message);
     println!("The function took ownership and returned it: {message}");
 
+    // mut lets this owner be mutably borrowed; &mut permits the function to change its text.
     let mut editable = String::from("Borrowing");
     add_exclamation(&mut editable);
     println!("Mutably borrowed and changed it: {editable}");
 }
 
+// &str is a borrowed view: this function can read the text without taking its ownership.
 fn byte_length(text: &str) -> usize {
     text.len()
 }
 
+// String takes ownership; mut allows this local binding to be edited, and -> String returns ownership.
 fn add_period(mut text: String) -> String {
     text.push('.');
     text
 }
 
+// &mut String is an exclusive, temporary borrow that allows this function to edit the owner's text.
 fn add_exclamation(text: &mut String) {
     text.push('!');
 }

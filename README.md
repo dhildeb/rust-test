@@ -17,8 +17,8 @@ Run the included checks with:
 cargo test
 ```
 
-Choose a numbered lesson from the menu, or choose `8` to see the challenges.
-Choose `q` to quit.
+Enter a lesson number from the menu; its output stays visible until you press
+Enter to return. Choose `8` to see the challenges or `q` to quit.
 
 ## What it demonstrates
 
