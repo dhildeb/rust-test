@@ -1,0 +1,2 @@
+# rust-test
+learn rust
